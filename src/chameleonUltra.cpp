@@ -11,7 +11,7 @@
 #define MAX_DUMP_SIZE 160
 
 
-std::vector<ChameleonUltra::CmdResponse> cmdResponses;
+std::vector<ChameleonUltra::CmdResponse> chameleonResponses;
 
 
 uint8_t calculateLRC(const uint8_t *data, size_t length) {
@@ -49,7 +49,7 @@ void chameleonNotifyCB(NimBLERemoteCharacteristic* pRemoteCharacteristic, uint8_
         memcpy(rsp.data, pData+9, rsp.dataSize);
     }
 
-    cmdResponses.push_back(rsp);
+    chameleonResponses.push_back(rsp);
 }
 
 
@@ -206,9 +206,9 @@ bool ChameleonUltra::writeCommand(Command cmd, uint8_t *data, size_t length) {
 
 
 bool ChameleonUltra::checkResponse() {
-    while(cmdResponses.empty()) {delay(10);}
+    while(chameleonResponses.empty()) {delay(10);}
 
-    cmdResponse = cmdResponses[0];
+    cmdResponse = chameleonResponses[0];
     bool success = false;
 
     switch (cmdResponse.status) {
@@ -267,7 +267,7 @@ bool ChameleonUltra::checkResponse() {
         Serial.println();
     }
 
-    cmdResponses.clear();
+    chameleonResponses.clear();
     return success;
 }
 

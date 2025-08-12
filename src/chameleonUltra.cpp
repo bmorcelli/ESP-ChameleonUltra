@@ -25,6 +25,9 @@ uint8_t calculateLRC(const uint8_t *data, size_t length) {
     return lrc;
 }
 
+#ifdef NIMBLE_V2_PLUS
+#define NimBLEAdvertisedDeviceCallbacks NimBLEScanCallbacks
+#endif
 
 class scanCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
@@ -58,7 +61,12 @@ ChameleonUltra::ChameleonUltra(bool debug) { _debug = debug;}
 
 ChameleonUltra::~ChameleonUltra() {
     if (_debug) Serial.println("Killing Chameleon...");
-    if (NimBLEDevice::getInitialized()) {
+    #ifdef NIMBLE_V2_PLUS
+    if (NimBLEDevice::isInitialized()) 
+    #else
+    if (NimBLEDevice::getInitialized()) 
+    #endif
+    {
         if (_debug) Serial.println("Deiniting ble...");
         NimBLEDevice::deinit(true);
     }
@@ -69,6 +77,23 @@ bool ChameleonUltra::searchChameleonDevice() {
     NimBLEDevice::init("");
 
     NimBLEScan* pScan = NimBLEDevice::getScan();
+
+    #ifdef NIMBLE_V2_PLUS
+    pScan->setScanCallbacks(new scanCallbacks());
+    pScan->setActiveScan(true);
+
+    BLEScanResults foundDevices = pScan->getResults(5);
+    bool chameleonFound = false;
+
+    for (int i=0; i<foundDevices.getCount(); i++) {
+        const NimBLEAdvertisedDevice *advertisedDevice = foundDevices.getDevice(i);
+
+        if (advertisedDevice->getName() == "ChameleonUltra") {
+            chameleonFound = true;
+            _device = (NimBLEAdvertisedDevice*)advertisedDevice;
+        }
+    }
+    #else
     pScan->setAdvertisedDeviceCallbacks(new scanCallbacks());
     pScan->setActiveScan(true);
 
@@ -83,6 +108,7 @@ bool ChameleonUltra::searchChameleonDevice() {
             _device = advertisedDevice;
         }
     }
+    #endif
 
     pScan->clearResults();
 
@@ -134,6 +160,21 @@ bool ChameleonUltra::chamelonServiceDiscovery() {
     Serial.print("Connected to: ");
     Serial.println(pClient->getPeerAddress().toString().c_str());
 
+    #ifdef NIMBLE_V2_PLUS
+    const std::vector<NimBLERemoteService *> pSvcs = pClient->getServices(true);
+    Serial.print(pSvcs.size()); Serial.println(" services found");
+
+    for (NimBLERemoteService* pSvc : pSvcs) {
+        Serial.println(pSvc->toString().c_str());
+
+        std::vector<NimBLERemoteCharacteristic *> pChrs = pSvc->getCharacteristics(true);
+        Serial.print(pChrs.size()); Serial.println(" characteristics found");
+
+        if (pChrs.empty()) continue;
+
+        for (NimBLERemoteCharacteristic* pChr : pChrs)
+    #else
+
     std::vector<NimBLERemoteService *> * pSvcs = pClient->getServices(true);
     Serial.print(pSvcs->size()); Serial.println(" services found");
 
@@ -145,7 +186,9 @@ bool ChameleonUltra::chamelonServiceDiscovery() {
 
         if (pChrs->empty()) continue;
 
-        for (NimBLERemoteCharacteristic* pChr : *pChrs) {
+        for (NimBLERemoteCharacteristic* pChr : *pChrs) 
+    #endif
+        {
             Serial.println(pChr->toString().c_str());
             Serial.print("UID size: ");Serial.println(pChr->getUUID().toString().length());
             Serial.print("Value? ");Serial.println(pChr->getValue());
@@ -157,11 +200,20 @@ bool ChameleonUltra::chamelonServiceDiscovery() {
             Serial.print("Can broadcast? ");Serial.println(pChr->canBroadcast());
 
 
+        #ifdef NIMBLE_V2_PLUS
+            std::vector<NimBLERemoteDescriptor *> pDscs = pChr->getDescriptors(true);
+            Serial.print(pDscs.size()); Serial.println(" descriptors found");
+            for (NimBLERemoteDescriptor* pDsc : pDscs) {
+                Serial.println(pDsc->toString().c_str());
+            }
+        #else
+
             std::vector<NimBLERemoteDescriptor *> * pDscs = pChr->getDescriptors(true);
             Serial.print(pDscs->size()); Serial.println(" descriptors found");
             for (NimBLERemoteDescriptor* pDsc : *pDscs) {
                 Serial.println(pDsc->toString().c_str());
             }
+        #endif
         }
 
     }

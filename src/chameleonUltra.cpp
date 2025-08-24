@@ -86,7 +86,7 @@ bool ChameleonUltra::searchChameleonDevice() {
     pScan->setScanCallbacks(new scanCallbacks());
     pScan->setActiveScan(true);
 
-    BLEScanResults foundDevices = pScan->getResults(5);
+    BLEScanResults foundDevices = pScan->getResults(150);
     bool chameleonFound = false;
 
     for (int i=0; i<foundDevices.getCount(); i++) {

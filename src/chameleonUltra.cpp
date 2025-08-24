@@ -129,7 +129,7 @@ bool ChameleonUltra::connectToChamelon() {
     bool chrFound = false;
 
 #ifdef NIMBLE_V2_PLUS
-    if (!pClient->connect(_device)) return false;
+    if (!pClient->connect(_device, false, false, false)) return false;
 #else
     if (!pClient->connect(&_device, false)) return false;
 #endif
@@ -168,7 +168,7 @@ bool ChameleonUltra::chamelonServiceDiscovery() {
     NimBLEClient *pClient = NimBLEDevice::createClient();
 
 #ifdef NIMBLE_V2_PLUS
-    if (!pClient->connect(_device)) return false;
+    if (!pClient->connect(_device, false, false, false)) return false;
 #else
     if (!pClient->connect(&_device)) return false;
 #endif

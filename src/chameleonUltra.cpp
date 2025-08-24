@@ -61,11 +61,15 @@ ChameleonUltra::ChameleonUltra(bool debug) { _debug = debug;}
 
 ChameleonUltra::~ChameleonUltra() {
     if (_debug) Serial.println("Killing Chameleon...");
-    #ifdef NIMBLE_V2_PLUS
-    if (NimBLEDevice::isInitialized()) 
-    #else
-    if (NimBLEDevice::getInitialized()) 
-    #endif
+#ifdef NIMBLE_V2_PLUS
+    if(_device) {
+        delete _device;
+        _device = nullptr;
+    }
+    if (NimBLEDevice::isInitialized())
+#else
+    if (NimBLEDevice::getInitialized())
+#endif
     {
         if (_debug) Serial.println("Deiniting ble...");
         NimBLEDevice::deinit(true);
@@ -90,7 +94,11 @@ bool ChameleonUltra::searchChameleonDevice() {
 
         if (advertisedDevice->getName() == "ChameleonUltra") {
             chameleonFound = true;
-            _device = (NimBLEAdvertisedDevice*)advertisedDevice;
+            if(_device) {
+                delete _device;
+                _device = nullptr;
+            }
+            _device = new NimBLEAdvertisedDevice(*advertisedDevice);
         }
     }
     #else
@@ -120,7 +128,11 @@ bool ChameleonUltra::connectToChamelon() {
     NimBLEClient *pClient = NimBLEDevice::createClient();
     bool chrFound = false;
 
+#ifdef NIMBLE_V2_PLUS
+    if (!pClient->connect(_device)) return false;
+#else
     if (!pClient->connect(&_device, false)) return false;
+#endif
 
     Serial.print("Connected to: ");
     Serial.println(pClient->getPeerAddress().toString().c_str());
@@ -155,7 +167,11 @@ bool ChameleonUltra::connectToChamelon() {
 bool ChameleonUltra::chamelonServiceDiscovery() {
     NimBLEClient *pClient = NimBLEDevice::createClient();
 
+#ifdef NIMBLE_V2_PLUS
+    if (!pClient->connect(_device)) return false;
+#else
     if (!pClient->connect(&_device)) return false;
+#endif
 
     Serial.print("Connected to: ");
     Serial.println(pClient->getPeerAddress().toString().c_str());

@@ -327,7 +327,7 @@ private:
 
     NimBLERemoteCharacteristic* writeChr;
     #ifdef NIMBLE_V2_PLUS
-    NimBLEAdvertisedDevice *_device;
+    NimBLEAdvertisedDevice *_device = nullptr;
     #else
     NimBLEAdvertisedDevice _device;
     #endif

@@ -72,7 +72,11 @@ ChameleonUltra::~ChameleonUltra() {
 #endif
     {
         if (_debug) Serial.println("Deiniting ble...");
-        NimBLEDevice::deinit(true);
+#if defined(CONFIG_IDF_TARGET_ESP32C5)
+        esp_bt_controller_deinit();
+#else
+        BLEDevice::deinit();
+#endif
     }
 }
 
